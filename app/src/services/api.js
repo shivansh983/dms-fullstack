@@ -22,6 +22,7 @@ const AUTH_PATHS = [
   ENDPOINTS.refresh,
   ENDPOINTS.logout,
   ENDPOINTS.mfaVerify,
+  ENDPOINTS.googleSso,
 ];
 const isAuthPath = (url = '') => AUTH_PATHS.some((path) => url.includes(path));
 

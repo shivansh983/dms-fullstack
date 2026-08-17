@@ -4,6 +4,9 @@ import Constants from 'expo-constants';
 const API_PORT = 8000;
 
 function devHost() {
+  const override = process.env.EXPO_PUBLIC_API_HOST;
+  if (override) return override;
+
   const hostUri =
     Constants.expoConfig?.hostUri ||
     Constants.expoGoConfig?.debuggerHost ||
@@ -11,7 +14,7 @@ function devHost() {
 
   const host = hostUri.split(':')[0];
 
-  if (host && host !== 'localhost' && host !== '127.0.0.1') return host;
+  if (host) return host;
 
   return Platform.OS === 'android' ? '10.0.2.2' : 'localhost';
 }
