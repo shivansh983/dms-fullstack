@@ -10,3 +10,12 @@ app/dist/
 app/web-build/
 
 server/uploads/
+
+scripts/
+**/test-*.js
+**/test-*.ps1
+**/*.test.js
+**/*.spec.js
+
+.claude/
+CLAUDE.md
