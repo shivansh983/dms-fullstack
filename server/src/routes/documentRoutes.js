@@ -6,6 +6,8 @@ const upload = require('../middleware/upload');
 const rules = require('../validations/documentValidation');
 const ctrl = require('../controllers/documentController');
 
+router.get('/:id/view/:filename', rules.byId, validate, ctrl.view);
+
 router.use(authenticate);
 
 router.get('/stats', ctrl.stats);

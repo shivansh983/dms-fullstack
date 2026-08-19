@@ -38,7 +38,7 @@ export default function SearchScreen({ navigation }) {
         <TextInput
           value={text}
           onChangeText={setText}
-          placeholder="Search documents..."
+          placeholder="Search name or contents..."
           placeholderTextColor={colors.textMuted}
           style={{ flex: 1, ...font.body, color: colors.text }}
           autoFocus

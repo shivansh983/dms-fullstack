@@ -7,6 +7,7 @@ const ApiError = require('../utils/ApiError');
 const fileSignature = require('../utils/fileSignature');
 const uploadRepo = require('../repositories/uploadRepository');
 const docRepo = require('../repositories/documentRepository');
+const ocr = require('./ocrService');
 const folderRepo = require('../repositories/folderRepository');
 const notificationRepo = require('../repositories/notificationRepository');
 const storage = require('./storageService');
@@ -230,6 +231,14 @@ exports.complete = async (id, userId) => {
       title: 'Upload complete',
       body: `${name} was uploaded and is being processed.`,
       type: 'ocr',
+    });
+
+    ocr.enqueue({
+      documentId,
+      userId,
+      name,
+      storageKey: finalKey,
+      mimeType: upload.type,
     });
 
     return docRepo.findById(documentId, userId);

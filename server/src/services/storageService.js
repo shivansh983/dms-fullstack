@@ -162,16 +162,43 @@ async function exists(key) {
   }
 }
 
-async function getDownloadUrl(key, filename) {
+function contentDisposition(mode, filename) {
+  if (!filename) return undefined;
+
+  const ascii = filename.replace(/[^\x20-\x7e]/g, '_').replace(/[\x22\x5c]/g, '');
+
+  return `${mode}; filename="${ascii}"; filename*=UTF-8''${encodeURIComponent(filename)}`;
+}
+
+async function getDownloadUrl(key, filename, options = {}) {
   const command = new GetObjectCommand({
     Bucket: BUCKET,
     Key: safeKey(key),
-    ResponseContentDisposition: filename
-      ? `attachment; filename="${filename.replace(/"/g, '')}"`
-      : undefined,
+    ResponseContentDisposition: contentDisposition(
+      options.inline ? 'inline' : 'attachment',
+      filename
+    ),
+    ResponseContentType: options.contentType || undefined,
   });
 
   return getSignedUrl(signer, command, { expiresIn: config.s3.urlTtlSeconds });
+}
+
+async function getObjectStream(key, range) {
+  const res = await s3.send(
+    new GetObjectCommand({
+      Bucket: BUCKET,
+      Key: safeKey(key),
+      Range: range || undefined,
+    })
+  );
+
+  return {
+    body: res.Body,
+    contentType: res.ContentType,
+    contentLength: res.ContentLength,
+    contentRange: res.ContentRange,
+  };
 }
 
 async function remove(key) {
@@ -184,6 +211,11 @@ async function remove(key) {
   }
 }
 
+async function getObjectBuffer(key) {
+  const res = await s3.send(new GetObjectCommand({ Bucket: BUCKET, Key: safeKey(key) }));
+  return Buffer.from(await res.Body.transformToByteArray());
+}
+
 module.exports = {
   s3,
   ensureBucket,
@@ -193,7 +225,10 @@ module.exports = {
   abortMultipart,
   putObject,
   objectSize,
+  getObjectBuffer,
   exists,
   getDownloadUrl,
+  getObjectStream,
+  contentDisposition,
   remove,
 };

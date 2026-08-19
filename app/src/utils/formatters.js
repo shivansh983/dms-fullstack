@@ -29,3 +29,14 @@ export const fileIcon = (type = '') => {
   if (type.includes('image')) return 'image';
   return 'document';
 };
+export const cleanText = (text = '') =>
+  text
+    .replace(/\r\n/g, '\n')
+    .replace(/[ \t]+/g, ' ')
+    .split('\n')
+    .map((line) => line.trim())
+    .join('\n')
+    .replace(/\n{3,}/g, '\n\n')
+    .trim();
+
+export const countWords = (text = '') => (text.match(/\S+/g) || []).length;

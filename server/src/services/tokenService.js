@@ -5,6 +5,7 @@ const config = require('../config/env');
 const sha256 = (value) => crypto.createHash('sha256').update(value).digest('hex');
 
 const MFA_TOKEN_TYPE = 'mfa';
+const VIEW_TOKEN_TYPE = 'view';
 
 function signAccessToken(user) {
   return jwt.sign(
@@ -44,6 +45,24 @@ function verifyMfaToken(token) {
   return payload;
 }
 
+function signViewToken({ documentId, userId, expiresIn }) {
+  return jwt.sign(
+    { sub: userId, doc: documentId, typ: VIEW_TOKEN_TYPE },
+    config.jwt.accessSecret,
+    { expiresIn }
+  );
+}
+
+function verifyViewToken(token) {
+  const payload = jwt.verify(token, config.jwt.accessSecret);
+
+  if (payload.typ !== VIEW_TOKEN_TYPE) {
+    throw new jwt.JsonWebTokenError('Not a view token');
+  }
+
+  return payload;
+}
+
 function verifyRefreshToken(token) {
   return jwt.verify(token, config.jwt.refreshSecret);
 }
@@ -60,11 +79,14 @@ function secondsUntilExpiry(exp) {
 module.exports = {
   sha256,
   MFA_TOKEN_TYPE,
+  VIEW_TOKEN_TYPE,
   signAccessToken,
   signRefreshToken,
   signMfaToken,
+  signViewToken,
   verifyAccessToken,
   verifyMfaToken,
+  verifyViewToken,
   verifyRefreshToken,
   expiryDateFromToken,
   secondsUntilExpiry,

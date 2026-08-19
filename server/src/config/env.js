@@ -104,8 +104,14 @@ module.exports = {
   },
 
   email: {
-    apiKey: process.env.RESEND_API_KEY || null,
-    from: process.env.EMAIL_FROM || 'DMS <onboarding@resend.dev>',
+    from: process.env.EMAIL_FROM || 'DMS <no-reply@dms.local>',
+    smtp: {
+      host: process.env.SMTP_HOST || null,
+      port: Number(process.env.SMTP_PORT) || 587,
+      secure: String(process.env.SMTP_SECURE || '').toLowerCase() === 'true',
+      user: process.env.SMTP_USER || null,
+      password: process.env.SMTP_PASSWORD || null,
+    },
   },
 
   passwordReset: {

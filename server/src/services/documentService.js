@@ -8,6 +8,8 @@ const docRepo = require('../repositories/documentRepository');
 const folderRepo = require('../repositories/folderRepository');
 const notificationRepo = require('../repositories/notificationRepository');
 const storage = require('./storageService');
+const tokens = require('./tokenService');
+const ocr = require('./ocrService');
 
 const STATUSES = ['pending', 'processing', 'approved', 'rejected'];
 
@@ -96,6 +98,8 @@ exports.create = async ({ file, meta = {}, userId }) => {
       type: 'ocr',
     });
 
+    ocr.enqueue({ documentId: id, userId, name, storageKey, mimeType: trueMime });
+
     return docRepo.findById(id, userId);
   } catch (err) {
     await storage.remove(storageKey);
@@ -153,7 +157,9 @@ exports.remove = async (id, userId) => {
   return { ok: true };
 };
 
-exports.getDownloadUrl = async (id, userId) => {
+const viewPath = (id, name) => `/api/documents/${id}/view/${encodeURIComponent(name)}`;
+
+exports.getDownloadUrl = async (id, userId, options = {}) => {
   const doc = await docRepo.findStorage(id, userId);
   if (!doc) throw ApiError.notFound('Document not found');
 
@@ -161,12 +167,54 @@ exports.getDownloadUrl = async (id, userId) => {
     throw ApiError.notFound('The stored file is missing');
   }
 
-  const url = await storage.getDownloadUrl(doc.storageKey, doc.name);
+  const expiresIn = config.s3.urlTtlSeconds;
+
+  const token =
+    options.inline && options.baseUrl
+      ? tokens.signViewToken({ documentId: id, userId, expiresIn })
+      : null;
+
+  const url = token
+    ? `${options.baseUrl}${viewPath(id, doc.name)}?token=${token}`
+    : await storage.getDownloadUrl(doc.storageKey, doc.name, {
+        inline: Boolean(options.inline),
+        contentType: doc.type,
+      });
 
   return {
     url,
     name: doc.name,
     type: doc.type,
-    expiresIn: config.s3.urlTtlSeconds,
+    expiresIn,
+  };
+};
+
+function readViewToken(token) {
+  try {
+    return tokens.verifyViewToken(token);
+  } catch (err) {
+    if (err.name === 'TokenExpiredError') {
+      throw ApiError.unauthorized('This link has expired. Open the document again from the app.');
+    }
+    throw err;
+  }
+}
+
+exports.openForView = async (id, token, range) => {
+  const payload = readViewToken(token);
+
+  if (payload.doc !== id) {
+    throw ApiError.forbidden('This link belongs to another document');
+  }
+
+  const doc = await docRepo.findStorage(id, payload.sub);
+  if (!doc) throw ApiError.notFound('Document not found');
+
+  const object = await storage.getObjectStream(doc.storageKey, range);
+
+  return {
+    doc,
+    object,
+    disposition: storage.contentDisposition('inline', doc.name),
   };
 };

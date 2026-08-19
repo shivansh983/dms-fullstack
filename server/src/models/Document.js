@@ -54,6 +54,16 @@ module.exports = (sequelize) => {
         defaultValue: 1,
       },
 
+      content: {
+        type: DataTypes.TEXT,
+        allowNull: true,
+      },
+
+      ocrConfidence: {
+        type: DataTypes.FLOAT,
+        allowNull: true,
+      },
+
       tags: {
         type: DataTypes.ARRAY(DataTypes.STRING),
         allowNull: false,

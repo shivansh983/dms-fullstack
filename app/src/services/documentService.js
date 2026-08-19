@@ -126,6 +126,16 @@ export const documentService = {
   },
 
 
+  previewUrl: async (id) => {
+    const { data } = await api.get(ENDPOINTS.download(id));
+    return data.url;
+  },
+
+  openUrl: async (id) => {
+    const { data } = await api.get(ENDPOINTS.download(id) + '?inline=1');
+    return data.url;
+  },
+
   download: async (doc) => {
     const target = new File(Paths.cache, doc.name);
 

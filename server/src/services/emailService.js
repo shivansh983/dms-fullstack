@@ -1,25 +1,50 @@
-const { Resend } = require('resend');
+const nodemailer = require('nodemailer');
 const config = require('../config/env');
 const logger = require('../utils/logger');
 
-const resend = config.email.apiKey ? new Resend(config.email.apiKey) : null;
+// const { Resend } = require('resend');
+// const resend = config.email.apiKey ? new Resend(config.email.apiKey) : null;
+
+const { host, port, secure, user, password } = config.email.smtp;
+
+const transporter = host
+  ? nodemailer.createTransport({
+      host,
+      port,
+      secure,
+      auth: user && password ? { user, pass: password } : undefined,
+    })
+  : null;
 
 async function send({ to, subject, html }) {
-  if (!resend) {
-    logger.warn(`email not sent, RESEND_API_KEY is unset: "${subject}" to ${to}`);
+  if (!transporter) {
+    logger.warn(`email not sent, SMTP_HOST is unset: "${subject}" to ${to}`);
     return false;
   }
 
-  const { error } = await resend.emails.send({
+  const info = await transporter.sendMail({
     from: config.email.from,
     to,
     subject,
     html,
   });
 
-  if (error) throw new Error(error.message || 'Email provider rejected the request');
+  if (info.rejected?.length) {
+    throw new Error(`Mail server rejected ${info.rejected.join(', ')}`);
+  }
 
   return true;
+
+  // const { error } = await resend.emails.send({
+  //   from: config.email.from,
+  //   to,
+  //   subject,
+  //   html,
+  // });
+  //
+  // if (error) throw new Error(error.message || 'Email provider rejected the request');
+  //
+  // return true;
 }
 
 async function sendPasswordReset(to, resetLink, minutes) {

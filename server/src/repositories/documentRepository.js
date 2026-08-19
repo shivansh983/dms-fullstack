@@ -24,6 +24,8 @@ const LIST_ATTRS = [
   'tags',
 ];
 
+const DETAIL_ATTRS = [...LIST_ATTRS, 'content', 'ocrConfidence'];
+
 const toListItem = ({ owner, ...doc }) => ({
   ...doc,
   size: Number(doc.size),
@@ -37,7 +39,12 @@ function buildWhere({ userId, q, status, folderId, favoritesOnly }) {
   if (folderId) where.folderId = folderId;
   if (favoritesOnly) where.isFavorite = true;
 
-  if (q) where.name = { [Op.iLike]: `%${q}%` };
+  if (q) {
+    where[Op.or] = [
+      { name: { [Op.iLike]: `%${q}%` } },
+      { content: { [Op.iLike]: `%${q}%` } },
+    ];
+  }
 
   return where;
 }
@@ -69,7 +76,7 @@ exports.findById = async (id, userId) => {
   const doc = await Document.findOne({
     where: { id, userId },
 
-    attributes: LIST_ATTRS,
+    attributes: DETAIL_ATTRS,
     include: [
       { model: User, as: 'owner', attributes: ['name'] },
       { model: Folder, as: 'folder', attributes: ['id', 'name'] },
@@ -176,3 +183,13 @@ exports.stats = async (userId) => {
     storageBytes: Number(row.storageBytes),
   };
 };
+
+exports.saveExtractedText = (id, { content, ocrConfidence }) =>
+  Document.update({ content, ocrConfidence, status: 'pending' }, { where: { id } });
+
+exports.findProcessing = () =>
+  Document.findAll({
+    where: { status: 'processing' },
+    attributes: ['id', 'name', 'type', 'storageKey', 'userId'],
+    raw: true,
+  });

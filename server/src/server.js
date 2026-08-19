@@ -4,6 +4,7 @@ const logger = require('./utils/logger');
 const redis = require('./config/redis');
 const storage = require('./services/storageService');
 const chunkedUpload = require('./services/chunkedUploadService');
+const ocr = require('./services/ocrService');
 const { sequelize } = require('./models');
 
 const GC_INTERVAL_MS = 60 * 60 * 1000;
@@ -35,6 +36,8 @@ async function start() {
   await storage.ensureBucket();
   logger.info(`object storage ready (bucket: ${config.s3.bucket})`);
 
+  await ocr.recoverStuck();
+
   await chunkedUpload.collectGarbage();
   gcTimer = setInterval(() => {
     chunkedUpload.collectGarbage().catch((err) => logger.error('upload GC failed', err));
@@ -54,6 +57,7 @@ function shutdown(signal) {
       if (server) {
         await new Promise((resolve) => server.close(resolve));
       }
+      await ocr.shutdown();
       await redis.close();
       await sequelize.close();
       process.exit(0);
