@@ -306,12 +306,12 @@ async function forgotPassword({ email }) {
 
   const link = `${config.passwordReset.linkBase}?token=${rawToken}`;
 
-  try {
-    const sent = await emailService.sendPasswordReset(user.email, link, ttlMinutes);
+  if (!config.isProduction) {
+    logger.warn(`reset token for ${user.email}: ${rawToken}`);
+  }
 
-    if (!sent && !config.isProduction) {
-      logger.warn(`reset link for ${user.email}: ${link}`);
-    }
+  try {
+    await emailService.sendPasswordReset(user.email, link, ttlMinutes, rawToken);
   } catch (err) {
     logger.error(`password reset email failed for user ${user.id}: ${err.message}`);
   }

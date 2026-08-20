@@ -47,13 +47,15 @@ async function send({ to, subject, html }) {
   // return true;
 }
 
-async function sendPasswordReset(to, resetLink, minutes) {
+async function sendPasswordReset(to, resetLink, minutes, token) {
   return send({
     to,
     subject: 'Reset your password',
     html: `<p>We received a request to reset your Document Manager password.</p>
-           <p><a href="${resetLink}">Reset password</a></p>
-           <p>This link expires in ${minutes} minutes and can only be used once.</p>
+           <p>Open the app, go to <b>Forgot password &rarr; I have a reset token</b>, and paste this token:</p>
+           <p style="font-family:monospace;font-size:15px;word-break:break-all;background:#f4f4f5;padding:12px;border-radius:6px">${token}</p>
+           <p>On a phone this link may open the app directly: <a href="${resetLink}">${resetLink}</a></p>
+           <p>This token expires in ${minutes} minutes and can only be used once.</p>
            <p>If you did not request this, you can ignore this email.</p>`,
   });
 }
