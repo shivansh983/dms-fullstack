@@ -20,6 +20,8 @@ router.post('/mfa/disable', credentialLimiter, authenticate, rules.mfaDisable, v
 router.post('/set-password', authenticate, rules.setPassword, validate, ctrl.setPassword);
 
 router.post('/forgot-password', credentialLimiter, rules.forgotPassword, validate, ctrl.forgotPassword);
+
+router.get('/reset-password', ctrl.resetRedirect);
 router.post('/reset-password', credentialLimiter, rules.resetPassword, validate, ctrl.resetPassword);
 
 module.exports = router;

@@ -29,6 +29,8 @@ if (chunkSize < MIN_PART_BYTES) {
   );
 }
 
+const appUrl = process.env.APP_URL || 'http://localhost:8000';
+
 module.exports = {
   env,
   isProduction: env === 'production',
@@ -84,6 +86,16 @@ module.exports = {
     diskHeadroomRatio: 0.2,
   },
 
+  ocr: {
+    paddleEnabled: process.env.OCR_PADDLE_ENABLED === 'true',
+    paddleUrl: process.env.OCR_PADDLE_URL || 'http://localhost:8501',
+    paddleTimeoutMs: Number(process.env.OCR_PADDLE_TIMEOUT_MS) || 120000,
+
+    minConfidence: Number(process.env.OCR_MIN_CONFIDENCE) || 60,
+    minWords: Number(process.env.OCR_MIN_WORDS) || 4,
+    jobTimeoutMs: Number(process.env.OCR_JOB_TIMEOUT_MS) || 180000,
+  },
+
   s3: {
     endpoint: process.env.S3_ENDPOINT || null,
     publicEndpoint: process.env.S3_PUBLIC_ENDPOINT || process.env.S3_ENDPOINT || null,
@@ -100,7 +112,7 @@ module.exports = {
 },
 
   app: {
-    url: process.env.APP_URL || 'http://localhost:8000',
+    url: appUrl,
   },
 
   email: {
@@ -116,7 +128,11 @@ module.exports = {
 
   passwordReset: {
     ttlMinutes: Number(process.env.PASSWORD_RESET_TTL_MIN) || 15,
-    linkBase: process.env.PASSWORD_RESET_LINK_BASE || 'dmsapp://reset-password',
+
+    webLinkBase:
+      process.env.PASSWORD_RESET_WEB_LINK || `${appUrl}/api/auth/reset-password`,
+
+    appLinkBase: process.env.PASSWORD_RESET_APP_LINK || 'dmsapp://reset-password',
   },
 
 };

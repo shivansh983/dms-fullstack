@@ -29,6 +29,10 @@ export default function SearchScreen({ navigation }) {
   const setQuery  = useDocumentStore((s) => s.setQuery);
   const setFilter = useDocumentStore((s) => s.setFilter);
 
+  useEffect(() => {
+    useDocumentStore.setState((s) => ({ filters: { ...s.filters, status: null } }));
+  }, []);
+
   useEffect(() => { setQuery(debounced); }, [debounced]);
 
   return (
@@ -85,8 +89,19 @@ export default function SearchScreen({ navigation }) {
             <DocumentCard document={item} onPress={() => navigation.navigate('Preview', { id: item.id })} />
           )}
           ListEmptyComponent={
-            <EmptyState icon="search-outline" title="No matches"
-              message={text ? `Nothing found for "${text}".` : 'Start typing to search.'} />
+            <EmptyState
+              icon="search-outline"
+              title="No matches"
+              message={
+                !text
+                  ? 'Start typing to search.'
+                  : filters.status
+                    ? `Nothing found for "${text}" among ${filters.status} documents.`
+                    : `Nothing found for "${text}".`
+              }
+              actionLabel={filters.status ? 'Clear status filter' : undefined}
+              onAction={filters.status ? () => setFilter('status', null) : undefined}
+            />
           }
         />
       )}

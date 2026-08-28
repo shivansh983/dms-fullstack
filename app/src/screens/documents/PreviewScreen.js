@@ -1,9 +1,10 @@
 import { useEffect, useState } from 'react';
 import {
-  View, Text, Image, ScrollView, ActivityIndicator, Alert, TouchableOpacity, StyleSheet, Linking,
+  View, Text, Image, ScrollView, ActivityIndicator, Alert, TouchableOpacity, StyleSheet,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import * as Sharing from 'expo-sharing';
+import * as WebBrowser from 'expo-web-browser';
 
 import StatusBadge from '../../components/documents/StatusBadge';
 import Button from '../../components/ui/Button';
@@ -12,6 +13,9 @@ import RoleGate from '../../components/layout/RoleGate';
 import useTheme from '../../hooks/useTheme';
 import { documentService } from '../../services/documentService';
 import { useDocumentStore } from '../../store/documentStore';
+import { useFolderStore } from '../../store/folderStore';
+import FolderPickerModal from '../../components/folders/FolderPickerModal';
+import OpenWithSheet from '../../components/documents/OpenWithSheet';
 import { formatSize, relativeDate, fileIcon, cleanText, countWords } from '../../utils/formatters';
 import { DOC_STATUS, ROLES } from '../../constants/enums';
 import { radius, spacing, font } from '../../styles/theme';
@@ -33,6 +37,13 @@ export default function PreviewScreen({ route, navigation }) {
 
   const toggleFavorite = useDocumentStore((s) => s.toggleFavorite);
   const removeDocument = useDocumentStore((s) => s.removeDocument);
+  const moveDocuments  = useDocumentStore((s) => s.moveDocuments);
+
+  const folders      = useFolderStore((s) => s.folders);
+  const fetchFolders = useFolderStore((s) => s.fetchFolders);
+
+  const [picking, setPicking] = useState(false);
+  const [openWith, setOpenWith] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -104,18 +115,31 @@ export default function PreviewScreen({ route, navigation }) {
     await Sharing.shareAsync(uri, { mimeType: doc.type, dialogTitle: doc.name });
   };
 
-  const onOpen = async () => {
+  const openInAppBrowser = async () => {
     setBusyAction('open');
     try {
       const url = await documentService.openUrl(id);
-      const ok = await Linking.canOpenURL(url);
-      if (!ok) throw new Error('No app on this device can open this file.');
-      await Linking.openURL(url);
+      await WebBrowser.openBrowserAsync(url, {
+        toolbarColor: colors.surface,
+        controlsColor: colors.primary,
+      });
     } catch (e) {
       Alert.alert('Could not open', e.message);
     } finally {
       setBusyAction(null);
     }
+  };
+
+  const onPickDestination = (choice) => {
+    if (choice === 'reader') {
+      return navigation.navigate('Reader', { id, name: doc.name });
+    }
+
+    if (choice === 'viewer') {
+      return navigation.navigate('Viewer', { id, name: doc.name, type: doc.type });
+    }
+
+    return openInAppBrowser();
   };
 
   const onShare = async () => {
@@ -127,6 +151,16 @@ export default function PreviewScreen({ route, navigation }) {
     } finally {
       setBusyAction(null);
     }
+  };
+
+  const onMove = async (folderId) => {
+    setPicking(false);
+
+    const res = await moveDocuments([id], folderId);
+    if (!res.ok) return Alert.alert('Could not move', res.message);
+
+    setDoc((d) => (d ? { ...d, folderId } : d));
+    fetchFolders();
   };
 
   const onDelete = () => {
@@ -167,9 +201,10 @@ export default function PreviewScreen({ route, navigation }) {
 
  
   const isImage = doc.type?.startsWith('image');
-  const bodyText = doc.content ? cleanText(doc.content) : '';
+  const bodyText = doc.contentPreview ? cleanText(doc.contentPreview) : '';
   const hasText = bodyText.length > 0;
   const words = hasText ? countWords(bodyText) : 0;
+  const truncated = (doc.contentLength || 0) > bodyText.length;
 
   const shownText =
     bodyText.length > PREVIEW_CHARS
@@ -251,7 +286,7 @@ export default function PreviewScreen({ route, navigation }) {
           <View style={styles.textHeader}>
             <Text style={{ ...font.h3, color: colors.text }}>Document text</Text>
             <Text style={{ ...font.small, color: colors.textMuted }}>
-              {words.toLocaleString()} words
+              {doc.pageCount > 1 ? `${doc.pageCount} pages` : `${words.toLocaleString()} words`}
             </Text>
           </View>
 
@@ -262,7 +297,7 @@ export default function PreviewScreen({ route, navigation }) {
 
 
             <TouchableOpacity
-              onPress={onOpen}
+              onPress={() => setOpenWith(true)}
               disabled={busyAction !== null}
               style={[styles.textToggle, { borderTopColor: colors.border }]}
             >
@@ -315,7 +350,31 @@ export default function PreviewScreen({ route, navigation }) {
         style={{ marginBottom: spacing.sm }}
       />
 
+      <Button
+        title="Move to folder"
+        variant="outline"
+        onPress={() => { fetchFolders(); setPicking(true); }}
+        style={{ marginBottom: spacing.sm }}
+      />
+
       <Button title="Delete document" variant="outline" onPress={onDelete} />
+
+      <OpenWithSheet
+        visible={openWith}
+        onClose={() => setOpenWith(false)}
+        onSelect={onPickDestination}
+        hasText={hasText}
+        isImage={isImage}
+        processing={doc.status === DOC_STATUS.PROCESSING}
+      />
+
+      <FolderPickerModal
+        visible={picking}
+        folders={folders}
+        currentFolderId={doc?.folderId ?? null}
+        onSelect={onMove}
+        onClose={() => setPicking(false)}
+      />
     </ScrollView>
   );
 }

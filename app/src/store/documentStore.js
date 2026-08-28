@@ -21,6 +21,7 @@ export const useDocumentStore = create((set, get) => ({
   query: '',
   sort: 'createdAt:desc',
   filters: initialFilters,
+  currentFolder: null,
 
   fetchDocuments: async ({ reset = false, refresh = false } = {}) => {
     const { page, query, sort, filters, loading, refreshing, loadingMore, hasMore } = get();
@@ -109,6 +110,46 @@ export const useDocumentStore = create((set, get) => ({
       return { ok: true };
     } catch (e) {
       set({ documents: before });
+      return { ok: false, message: e.message };
+    }
+  },
+
+  openFolder: (folder) => {
+    set((s) => ({
+      currentFolder: folder,
+      filters: { ...s.filters, folderId: folder?.id ?? null },
+      page: 1,
+      hasMore: true,
+    }));
+    get().fetchDocuments({ reset: true });
+  },
+
+  moveDocuments: async (ids, folderId) => {
+    const before = get().documents;
+    const viewing = get().filters.folderId;
+
+    set({
+      documents: folderId === viewing ? before : before.filter((d) => !ids.includes(d.id)),
+    });
+
+    try {
+      await Promise.all(ids.map((id) => documentService.move(id, folderId)));
+      return { ok: true };
+    } catch (e) {
+      set({ documents: before });
+      return { ok: false, message: e.message };
+    }
+  },
+
+  removeDocuments: async (ids) => {
+    const before = get().documents;
+    set({ documents: before.filter((d) => !ids.includes(d.id)) });
+
+    try {
+      await Promise.all(ids.map((id) => documentService.remove(id)));
+      return { ok: true };
+    } catch (e) {
+      set({ documents: before, error: e.message });
       return { ok: false, message: e.message };
     }
   },

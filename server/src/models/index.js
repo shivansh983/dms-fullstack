@@ -6,6 +6,7 @@ const PasswordResetToken = require('./PasswordResetToken')(sequelize);
 const Folder = require('./Folder')(sequelize);
 const Document = require('./Document')(sequelize);
 const DocumentVersion = require('./DocumentVersion')(sequelize);
+const DocumentPage = require('./DocumentPage')(sequelize);
 const Approval = require('./Approval')(sequelize);
 const Notification = require('./Notification')(sequelize);
 const Upload = require('./Upload')(sequelize);
@@ -53,6 +54,13 @@ Document.hasMany(DocumentVersion, {
 DocumentVersion.belongsTo(Document, { foreignKey: 'documentId', as: 'document' });
 DocumentVersion.belongsTo(User, { foreignKey: 'createdBy', as: 'author' });
 
+Document.hasMany(DocumentPage, {
+  foreignKey: 'documentId',
+  as: 'pages',
+  onDelete: 'CASCADE',
+});
+DocumentPage.belongsTo(Document, { foreignKey: 'documentId', as: 'document' });
+
 Document.hasOne(Approval, {
   foreignKey: 'documentId',
   as: 'approval',
@@ -80,6 +88,7 @@ module.exports = {
   Folder,
   Document,
   DocumentVersion,
+  DocumentPage,
   Approval,
   Notification,
   Upload,

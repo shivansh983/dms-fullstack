@@ -126,6 +126,11 @@ export const documentService = {
   },
 
 
+  content: async (id, params = {}) => {
+    const { data } = await api.get(ENDPOINTS.documentContent(id), { params });
+    return data;
+  },
+
   previewUrl: async (id) => {
     const { data } = await api.get(ENDPOINTS.download(id));
     return data.url;

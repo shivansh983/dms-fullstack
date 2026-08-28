@@ -20,7 +20,7 @@ export default function FoldersScreen({ navigation }) {
   const renameFolder = useFolderStore((s) => s.renameFolder);
   const deleteFolder = useFolderStore((s) => s.deleteFolder);
 
-  const setFilter = useDocumentStore((s) => s.setFilter);
+  const openInDocuments = useDocumentStore((s) => s.openFolder);
 
   const [name, setName] = useState('');
   const [creating, setCreating] = useState(false);
@@ -60,7 +60,7 @@ export default function FoldersScreen({ navigation }) {
   };
 
   const openFolder = (folder) => {
-    setFilter('folderId', folder.id);
+    openInDocuments(folder);
     navigation.navigate('Tabs', { screen: 'Documents' });
   };
 

@@ -1,6 +1,6 @@
 const { Op, fn, col, literal } = require('sequelize');
 
-const { sequelize, Document, DocumentVersion, User, Folder } = require('../models');
+const { sequelize, Document, DocumentPage, DocumentVersion, User, Folder } = require('../models');
 
 const SORTS = {
   'createdAt:desc': [['createdAt', 'DESC']],
@@ -24,7 +24,16 @@ const LIST_ATTRS = [
   'tags',
 ];
 
-const DETAIL_ATTRS = [...LIST_ATTRS, 'content', 'ocrConfidence'];
+const PREVIEW_CHARS = 1200;
+
+const DETAIL_ATTRS = [
+  ...LIST_ATTRS,
+  'ocrConfidence',
+  'ocrEngine',
+  'pageCount',
+  [literal(`LEFT("Document".content, ${PREVIEW_CHARS})`), 'contentPreview'],
+  [literal('COALESCE(LENGTH("Document".content), 0)'), 'contentLength'],
+];
 
 const toListItem = ({ owner, ...doc }) => ({
   ...doc,
@@ -184,8 +193,50 @@ exports.stats = async (userId) => {
   };
 };
 
-exports.saveExtractedText = (id, { content, ocrConfidence }) =>
-  Document.update({ content, ocrConfidence, status: 'pending' }, { where: { id } });
+exports.saveExtractedText = (id, { content, ocrConfidence, pages = [], engine = null }) =>
+  sequelize.transaction(async (t) => {
+    await Document.update(
+      {
+        content,
+        ocrConfidence,
+        ocrEngine: engine,
+        pageCount: pages.length,
+        status: 'pending',
+      },
+      { where: { id }, transaction: t }
+    );
+
+    await DocumentPage.destroy({ where: { documentId: id }, transaction: t });
+
+    if (!pages.length) return;
+
+    await DocumentPage.bulkCreate(
+      pages.map((page) => ({
+        documentId: id,
+        pageNumber: page.page,
+        content: page.text || null,
+        confidence: page.confidence ?? null,
+        engine,
+      })),
+      { transaction: t }
+    );
+  });
+
+exports.getPages = async (documentId, { offset, limit }) => {
+  const { rows, count } = await DocumentPage.findAndCountAll({
+    where: { documentId },
+    attributes: ['pageNumber', 'content', 'confidence', 'engine'],
+    order: [['pageNumber', 'ASC']],
+    offset,
+    limit,
+    raw: true,
+  });
+
+  return { pages: rows, totalPages: count };
+};
+
+exports.getFlatContent = (id, userId) =>
+  Document.findOne({ where: { id, userId }, attributes: ['content'], raw: true });
 
 exports.findProcessing = () =>
   Document.findAll({

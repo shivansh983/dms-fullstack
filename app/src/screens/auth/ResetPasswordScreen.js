@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import {
-  Text, StyleSheet, KeyboardAvoidingView, Platform, ScrollView, TouchableOpacity
+  View, Text, StyleSheet, KeyboardAvoidingView, Platform, ScrollView, TouchableOpacity
 } from 'react-native';
 import { useAuthStore } from '../../store/authStore';
 import Input from '../../components/ui/Input';
@@ -12,11 +12,9 @@ export default function ResetPasswordScreen({ route, navigation }) {
   const { colors } = useTheme();
   const styles = makeStyles(colors);
 
-  const [values, setValues] = useState({
-    token: route.params?.token || '',
-    newPassword: '',
-    confirmPassword: '',
-  });
+  const token = route.params?.token || '';
+
+  const [values, setValues] = useState({ newPassword: '', confirmPassword: '' });
   const [errors, setErrors] = useState({});
 
   const resetPassword = useAuthStore((s) => s.resetPassword);
@@ -30,18 +28,31 @@ export default function ResetPasswordScreen({ route, navigation }) {
   const onSubmit = async () => {
     const next = {};
 
-    if (!values.token.trim()) next.token = 'Paste the token from your reset link';
     if (values.newPassword.length < 6) next.newPassword = 'Password must be at least 6 characters';
     if (values.newPassword !== values.confirmPassword) next.confirmPassword = 'Passwords do not match';
 
     setErrors(next);
     if (Object.keys(next).length) return;
 
-    const res = await resetPassword(values.token.trim(), values.newPassword);
+    const res = await resetPassword(token, values.newPassword);
     if (!res.ok) return setErrors({ form: res.message });
 
     navigation.navigate('Login', { resetMessage: res.message });
   };
+
+  if (!token) {
+    return (
+      <View style={[styles.container, { backgroundColor: colors.background }]}>
+        <Text style={styles.title}>Open your reset link</Text>
+        <Text style={styles.subtitle}>
+          Tap the button in the password reset email we sent you. It brings you
+          straight back here, ready to set a new password.
+        </Text>
+
+        <Button title="Back to sign in" onPress={() => navigation.navigate('Login')} />
+      </View>
+    );
+  }
 
   return (
     <KeyboardAvoidingView
@@ -50,19 +61,7 @@ export default function ResetPasswordScreen({ route, navigation }) {
     >
       <ScrollView contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled">
         <Text style={styles.title}>Reset password</Text>
-        <Text style={styles.subtitle}>
-          Paste the token from your reset link and choose a new password.
-        </Text>
-
-        <Input
-          label="Reset token"
-          value={values.token}
-          onChangeText={onChange('token')}
-          error={errors.token}
-          placeholder="Paste token here"
-          autoCapitalize="none"
-          autoCorrect={false}
-        />
+        <Text style={styles.subtitle}>Choose a new password for your account.</Text>
 
         <Input
           label="New password"

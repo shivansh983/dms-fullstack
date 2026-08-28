@@ -17,6 +17,7 @@ router.get('/', rules.list, validate, ctrl.list);
 router.post('/', upload.single('file'), rules.create, validate, ctrl.create);
 
 router.get('/:id', rules.byId, validate, ctrl.getById);
+router.get('/:id/content', rules.byId, validate, ctrl.content);
 router.get('/:id/versions', rules.byId, validate, ctrl.versions);
 router.get('/:id/download', rules.byId, validate, ctrl.download);
 

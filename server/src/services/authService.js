@@ -304,14 +304,12 @@ async function forgotPassword({ email }) {
     expiresAt: new Date(Date.now() + ttlMinutes * 60 * 1000),
   });
 
-  const link = `${config.passwordReset.linkBase}?token=${rawToken}`;
+  const link = `${config.passwordReset.webLinkBase}?token=${rawToken}`;
 
-  if (!config.isProduction) {
-    logger.warn(`reset token for ${user.email}: ${rawToken}`);
-  }
+  logger.info(`password reset requested for user ${user.id}`);
 
   try {
-    await emailService.sendPasswordReset(user.email, link, ttlMinutes, rawToken);
+    await emailService.sendPasswordReset(user.email, link, ttlMinutes);
   } catch (err) {
     logger.error(`password reset email failed for user ${user.id}: ${err.message}`);
   }

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import {
   View, Text, StyleSheet, KeyboardAvoidingView, Platform, ScrollView, TouchableOpacity, Switch, Alert
 } from 'react-native';
@@ -20,6 +20,7 @@ export default function LoginScreen({ navigation }) {
   const [errors, setErrors] = useState({});
 
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
+  const googleInFlight = useRef(false);
   const loginWithGoogle = useAuthStore((s) => s.loginWithGoogle);
 
   const login = useAuthStore((s) => s.login);
@@ -42,6 +43,9 @@ export default function LoginScreen({ navigation }) {
   };
 
   const handleGoogleSignIn = async () => {
+    if (googleInFlight.current) return;
+    googleInFlight.current = true;
+
     try {
       setIsGoogleLoading(true);
       await GoogleSignin.hasPlayServices();
@@ -61,8 +65,15 @@ export default function LoginScreen({ navigation }) {
     } catch (error) {
       if (error.code === statusCodes.SIGN_IN_CANCELLED) {
         console.log('User closed the Google popup');
-      } else if (error.code === statusCodes.IN_PROGRESS) {
-        console.log('Login is already in progress');
+      } else if (
+        error.code === statusCodes.IN_PROGRESS ||
+        String(error.code) === '12502'
+      ) {
+        try { await GoogleSignin.signOut(); } catch {}
+        Alert.alert(
+          'Sign-in already running',
+          'A previous Google sign-in never finished. It has been cleared - please tap the button again.'
+        );
       } else if (error.code === statusCodes.PLAY_SERVICES_NOT_AVAILABLE) {
         Alert.alert(
           'Google Play Services',
@@ -79,6 +90,7 @@ export default function LoginScreen({ navigation }) {
         console.error(error);
       }
     } finally {
+      googleInFlight.current = false;
       setIsGoogleLoading(false);
     }
   };

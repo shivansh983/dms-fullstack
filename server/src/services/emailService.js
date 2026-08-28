@@ -2,9 +2,6 @@ const nodemailer = require('nodemailer');
 const config = require('../config/env');
 const logger = require('../utils/logger');
 
-// const { Resend } = require('resend');
-// const resend = config.email.apiKey ? new Resend(config.email.apiKey) : null;
-
 const { host, port, secure, user, password } = config.email.smtp;
 
 const transporter = host
@@ -34,29 +31,27 @@ async function send({ to, subject, html }) {
   }
 
   return true;
-
-  // const { error } = await resend.emails.send({
-  //   from: config.email.from,
-  //   to,
-  //   subject,
-  //   html,
-  // });
-  //
-  // if (error) throw new Error(error.message || 'Email provider rejected the request');
-  //
-  // return true;
 }
 
-async function sendPasswordReset(to, resetLink, minutes, token) {
+async function sendPasswordReset(to, resetLink, minutes) {
   return send({
     to,
     subject: 'Reset your password',
-    html: `<p>We received a request to reset your Document Manager password.</p>
-           <p>Open the app, go to <b>Forgot password &rarr; I have a reset token</b>, and paste this token:</p>
-           <p style="font-family:monospace;font-size:15px;word-break:break-all;background:#f4f4f5;padding:12px;border-radius:6px">${token}</p>
-           <p>On a phone this link may open the app directly: <a href="${resetLink}">${resetLink}</a></p>
-           <p>This token expires in ${minutes} minutes and can only be used once.</p>
-           <p>If you did not request this, you can ignore this email.</p>`,
+    html: `<div style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;max-width:480px;color:#0f172a">
+             <p>We received a request to reset your Document Manager password.</p>
+             <p style="margin:24px 0">
+               <a href="${resetLink}"
+                  style="display:inline-block;background:#2563eb;color:#ffffff;text-decoration:none;padding:14px 28px;border-radius:8px;font-weight:600">
+                 Reset my password
+               </a>
+             </p>
+             <p style="color:#475569;font-size:14px">
+               This link opens the app and expires in ${minutes} minutes. It can only be used once.
+             </p>
+             <p style="color:#475569;font-size:14px">
+               If you did not request this, you can safely ignore this email &mdash; your password will not change.
+             </p>
+           </div>`,
   });
 }
 

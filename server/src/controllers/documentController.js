@@ -15,6 +15,10 @@ exports.getById = asyncHandler(async (req, res) => {
   res.json(await documentService.get(req.params.id, req.user.id));
 });
 
+exports.content = asyncHandler(async (req, res) => {
+  res.json(await documentService.content(req.params.id, req.user.id, req.query));
+});
+
 exports.versions = asyncHandler(async (req, res) => {
   res.json(await documentService.versions(req.params.id, req.user.id));
 });

@@ -1,7 +1,6 @@
 name: dms-rustfs
 
 services:
-  # RustFS main service - S3-compatible object storage
   rustfs:
     image: rustfs/rustfs:latest
     container_name: dms-rustfs

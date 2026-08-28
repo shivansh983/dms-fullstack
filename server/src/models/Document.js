@@ -64,6 +64,17 @@ module.exports = (sequelize) => {
         allowNull: true,
       },
 
+      ocrEngine: {
+        type: DataTypes.STRING(32),
+        allowNull: true,
+      },
+
+      pageCount: {
+        type: DataTypes.INTEGER,
+        allowNull: false,
+        defaultValue: 0,
+      },
+
       tags: {
         type: DataTypes.ARRAY(DataTypes.STRING),
         allowNull: false,

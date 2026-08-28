@@ -50,12 +50,10 @@ export default function ForgotPasswordScreen({ navigation }) {
         {sent ? (
           <>
             <Text style={styles.success}>{sent}</Text>
-
-            <Button
-              title="I have a reset token"
-              onPress={() => navigation.navigate('ResetPassword')}
-              style={{ marginTop: spacing.sm }}
-            />
+            <Text style={styles.hint}>
+              Open the email and tap "Reset my password". The link brings you back
+              into the app with everything filled in.
+            </Text>
           </>
         ) : (
           <>
@@ -93,6 +91,7 @@ const makeStyles = (colors) => StyleSheet.create({
   container: { flexGrow: 1, justifyContent: 'center', padding: spacing.lg },
   title: { ...font.h1, color: colors.text },
   subtitle: { ...font.body, color: colors.textMuted, marginBottom: spacing.xl },
-  success: { ...font.body, color: colors.text, marginBottom: spacing.md },
+  success: { ...font.body, color: colors.text, marginBottom: spacing.sm },
+  hint: { ...font.small, color: colors.textMuted, marginBottom: spacing.md },
   link: { marginTop: spacing.lg, alignItems: 'center' },
 });

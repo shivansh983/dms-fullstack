@@ -17,6 +17,7 @@ export const ENDPOINTS = {
 
   documents: '/documents',
   documentById: (id) => `/documents/${id}`,
+  documentContent: (id) => `/documents/${id}/content`,
   download: (id) => `/documents/${id}/download`,
 
   folders: '/folders',

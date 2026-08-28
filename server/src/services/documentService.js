@@ -54,6 +54,33 @@ exports.get = async (id, userId) => {
 
 exports.stats = (userId) => docRepo.stats(userId);
 
+const MAX_PAGES_PER_REQUEST = 20;
+
+exports.content = async (id, userId, query = {}) => {
+  await exports.get(id, userId);
+
+  const limit = Math.min(Number(query.limit) || 5, MAX_PAGES_PER_REQUEST);
+  const page = Math.max(Number(query.page) || 1, 1);
+  const offset = (page - 1) * limit;
+
+  const { pages, totalPages } = await docRepo.getPages(id, { offset, limit });
+
+  if (totalPages) {
+    return { mode: 'paged', page, limit, totalPages, pages };
+  }
+
+  const row = await docRepo.getFlatContent(id, userId);
+  const flat = row?.content?.trim();
+
+  return {
+    mode: 'flat',
+    page: 1,
+    limit,
+    totalPages: flat ? 1 : 0,
+    pages: flat ? [{ pageNumber: 1, content: flat, confidence: null, engine: null }] : [],
+  };
+};
+
 exports.versions = async (id, userId) => {
   await exports.get(id, userId);
   return docRepo.listVersions(id);
